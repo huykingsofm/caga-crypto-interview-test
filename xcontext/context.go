@@ -6,23 +6,36 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type xcontextKey int
+
 const (
-	WSUpgraderKey    = "wsUpgrader"
-	ServerAddressKey = "serverAddress"
+	wsUpgraderKey xcontextKey = iota
+	serverAddressKey
+	uniqueRandomEngineMaxValueKey
 )
 
 func WithWSUpgrader(ctx context.Context) context.Context {
-	return context.WithValue(ctx, WSUpgraderKey, &websocket.Upgrader{})
+	return context.WithValue(ctx, wsUpgraderKey, &websocket.Upgrader{})
 }
 
 func WSUpgarder(ctx context.Context) *websocket.Upgrader {
-	return ctx.Value(WSUpgraderKey).(*websocket.Upgrader)
+	upgrader := ctx.Value(wsUpgraderKey)
+	if upgrader == nil {
+		return &websocket.Upgrader{}
+	}
+
+	return upgrader.(*websocket.Upgrader)
 }
 
 func WithServerAddress(ctx context.Context, addr string) context.Context {
-	return context.WithValue(ctx, ServerAddressKey, addr)
+	return context.WithValue(ctx, serverAddressKey, addr)
 }
 
 func ServerAddress(ctx context.Context) string {
-	return ctx.Value(ServerAddressKey).(string)
+	svaddr := ctx.Value(serverAddressKey)
+	if svaddr == nil {
+		return ":8000"
+	}
+
+	return svaddr.(string)
 }

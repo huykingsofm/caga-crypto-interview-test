@@ -9,7 +9,11 @@ import (
 
 func main() {
 	ctx := context.Background()
-	ctx = xcontext.WithServerAddress(ctx, ":8000")
+
+	// Uncomment the following line to set a small max value for the random
+	// engine.
+	// ctx = xcontext.WithUniqueRandomEngineMaxValue(ctx, 10)
+
 	log.Println("Server started at", xcontext.ServerAddress(ctx))
 
 	svr := server.NewServer(ctx)

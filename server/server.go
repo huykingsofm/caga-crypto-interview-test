@@ -9,6 +9,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var uniqueEngine = NewUniqueRandomEngineWithMax(10)
+
 func wsHandler(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ws, err := xcontext.WSUpgarder(ctx).Upgrade(w, r, nil)
@@ -19,24 +21,30 @@ func wsHandler(ctx context.Context) func(w http.ResponseWriter, r *http.Request)
 
 		defer ws.Close()
 
-		// Currently, unique property is applied to a single connections. So this is
-		// a local variable.
-		// If the property will be applied to all connections in the future, move
-		// this variable to the global scope.
-		engine := NewRandomEngine()
-
 		for {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
 				log.Println("Client closed the connection:", err)
 				break
 			}
+
+			// Ignore if the message is empty.
+			if len(msg) == 0 {
+				ws.WriteMessage(websocket.TextMessage, []byte("got an empty message"))
+				continue
+			}
+
 			log.Println("Got a message from", r.RemoteAddr, ":", string(msg))
 
-			n, err := engine.Next()
+			n, err := uniqueEngine.Next()
 			if err != nil {
-				ws.WriteMessage(websocket.TextMessage, []byte("Something wrong"))
+				ws.WriteMessage(
+					websocket.TextMessage,
+					[]byte("Something wrong, contact to administrator to know more information"),
+				)
+				log.Println("Got an error from random engine:", err)
 			} else {
+				// Send the unique random value to the client.
 				ws.WriteMessage(websocket.TextMessage, []byte(n))
 			}
 		}
